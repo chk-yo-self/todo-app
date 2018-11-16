@@ -59,9 +59,8 @@ import { initClasses } from './store/state.js';
   const todoLists = localStorage.getItem('todoLists')
     ? initClasses(JSON.parse(localStorage.getItem('todoLists')))
     : [];
-    const saveToStorage = () =>
+  const saveToStorage = () =>
   localStorage.setItem('todoLists', JSON.stringify(todoLists));
-
   const BACKSPACE_KEY = 8;
   const ENTER_KEY = 13;
   const state = {
@@ -477,10 +476,14 @@ import { initClasses } from './store/state.js';
     if (
       !e.target.classList.contains('todo-list__item') 
       && e.target.dataset.action !== 'toggleContent'
+      && !e.target.classList.contains('todo-item__title')
       || e.target.contains($('.bulk-actions__checkbox-label', e.target))
       )
        return;
     let todoItem = e.target;
+    if (e.target.classList.contains('todo-item__title')) {
+      todoItem = e.target.parentNode;
+    }
     const id = todoItem.id;
     const dueDateLabel = $('.badge--due-date', todoItem);
     const todoItemTitle = $('.todo-item__title', todoItem);

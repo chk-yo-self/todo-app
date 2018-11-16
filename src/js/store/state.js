@@ -11,9 +11,7 @@ export function initClasses(arr) {
 }
 
 export default {
-  todoLists: localStorage.getItem('todoLists')
-    ? initClasses(JSON.parse(localStorage.getItem('todoLists')))
-    : [],
+  todoLists: [],
   activeList: null,
   filteredList: null,
   activeTask: null,
