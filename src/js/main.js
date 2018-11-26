@@ -60,6 +60,12 @@ import state from './store/state.js';
   const BACKSPACE_KEY = 8;
   const ENTER_KEY = 13;
 
+  const getListByTaskId = (todoId) => {
+    return state.todoLists.find((list) =>
+      list.tasks.find((task) => task.id === todoId)
+    );
+  };
+
   // Adds new task object to current list array
   function addTodo(e) {
     e.preventDefault();
@@ -186,12 +192,6 @@ import state from './store/state.js';
         }
       }
     }
-  }
-
-  function getListByTaskId(todoId) {
-    return state.todoLists.find((list) =>
-      list.tasks.find((task) => task.id === todoId)
-    );
   }
 
   // Updates todo object's `done` property to reflect current `checked` state
