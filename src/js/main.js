@@ -309,7 +309,7 @@ import state from './store/state.js';
   // Empties todos array and removes all rendered todo items
   function clearAll(e) {
     state.todoLists.length = 1; // Removes all lists, except inbox
-    inbox.tasks.length = 0; // Removes all tasks from inbox
+    state.todoLists[0].tasks.length = 0; // Removes all tasks from inbox
     window.location.reload(true);
   }
 
