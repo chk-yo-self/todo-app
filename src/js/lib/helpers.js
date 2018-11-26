@@ -1,3 +1,15 @@
+import List from '../components/List.js';
+import Task from '../components/Task.js';
+
+// Converts JSON list and task objects back to instances of original classes
+export function initClasses(arr) {
+  return arr.map((item) => {
+    const list = new List(null, null, item);
+    list.tasks = item.tasks.map((task) => new Task(null, task));
+    return list;
+  });
+}
+
 // Generates unique ID string, used for identifying todo items.
 export const uniqueID = () =>
   +Date.now() +
@@ -95,13 +107,13 @@ export const createNode = (tagName, attributes, ...children) => {
   });
 
   return node;
-};
+}
 
 // Resizes text inputs and textareas to show all content within
 export function autoHeightResize(elem) {
   elem.style.height = '0px';
   elem.style.height = `${elem.scrollHeight}px`;
-};
+}
 
 // Removes whitespace from both ends of string, non-alphanumeric characters, and excess whitespace between words
 export function filterTag(tag) {
@@ -109,4 +121,4 @@ export function filterTag(tag) {
     .trim()
     .replace(/  +/g, ' ')
     .replace(/[^\w -]/g, '');
-};
+}

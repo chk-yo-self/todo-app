@@ -1,8 +1,7 @@
 import List from './components/List.js';
 import Task from './components/Task.js';
 import Subtask from './components/Subtask.js';
-import { 
-  uniqueID,
+import {
   camelCased, 
   $, 
   $all,
@@ -22,7 +21,7 @@ import {
   populateCalendarDays,
   selectDay
 } from './components/Calendar.js';
-import {expandSearchBar} from './components/SearchBar.js';
+import { expandSearchBar } from './components/SearchBar.js';
 import {
   toggleMenu,
 displayPanel
@@ -30,12 +29,9 @@ displayPanel
 import {
   stickToolbar,
   initBulkEditing,
-  highlightSelected,
   enableBulkActions
 } from './components/BulkActionsToolbar.js'
-import { initClasses } from './store/state.js';
-
-
+import state from './store/state.js';
 
 (function app() {
 
@@ -56,62 +52,13 @@ import { initClasses } from './store/state.js';
   const todoAppContainer = $('#todoAppContainer');
   const taskDetails = $('#taskDetails');
   const hiddenTaskId = $('#taskId');
-  const todoLists = localStorage.getItem('todoLists')
-    ? initClasses(JSON.parse(localStorage.getItem('todoLists')))
-    : [];
-  const saveToStorage = () =>
-  localStorage.setItem('todoLists', JSON.stringify(todoLists));
+  const saveToStorage = () => {
+    localStorage.setItem('todoLists', JSON.stringify(state.todoLists));
+    console.log('Saved to localStorage');
+    return true;
+  };
   const BACKSPACE_KEY = 8;
   const ENTER_KEY = 13;
-  const state = {
-    activeList: null,
-    filteredList: null,
-    nextOnboardingStep: null,
-    onboarding: {
-      currentStep: null,
-      statusLog: [false, false, false],
-      get isCompleted() {
-        return this.statusLog.every((status) => status === true);
-      },
-      get nextStep() {
-        return this.isCompleted
-          ? 4
-          : this.currentStep === 3
-            ? this.statusLog.indexOf(false) + 1
-            : this.statusLog.indexOf(false, this.currentStep) + 1;
-      },
-      set updateStatus(val) {
-        this.statusLog[this.currentStep - 1] = val;
-      }
-    }
-  };
-
-  if (!todoLists.find((list) => list.name === 'Inbox')) {
-    $('#onboarding').classList.add('is-active');
-    const initInbox = new List('Inbox', null);
-    todoLists.push(initInbox);
-    saveToStorage();
-  }
-
-  const inbox = todoLists.find((list) => list.name === 'Inbox');
-  inbox.id = 'inbox';
-  // Populates inbox tasks on load
-  displayList(inbox);
-
-  // Add toggleDone functionality to all prebuilt lists
-  $all('.todo-list').forEach((list) => {
-    list.addEventListener('click', toggleDone);
-    list.addEventListener('click', toggleContent);
-    list.addEventListener('click', setPriority);
-    updateTaskCount(list.id);
-  });
-
-  // Creates list node for each list object, except for the inbox list
-  todoLists.forEach((list, i) => {
-    if (i !== 0) {
-      createList(list);
-    }
-  });
 
   // Adds new task object to current list array
   function addTodo(e) {
@@ -124,7 +71,6 @@ import { initClasses } from './store/state.js';
     if (text !== '') {
       const todo = new Task(text);
       state.activeList.tasks.push(todo); // Add new item to bottom of the list
-      saveToStorage();
       populateList(state.activeList.tasks, ulActiveList);
       updateTaskCount(state.activeList.id);
     }
@@ -243,7 +189,7 @@ import { initClasses } from './store/state.js';
   }
 
   function getListByTaskId(todoId) {
-    return todoLists.find((list) =>
+    return state.todoLists.find((list) =>
       list.tasks.find((task) => task.id === todoId)
     );
   }
@@ -306,8 +252,6 @@ import { initClasses } from './store/state.js';
       );
     }
 
-    saveToStorage();
-
     // Update active task count in sidebar
     updateTaskCount(state.activeList.id);
 
@@ -359,19 +303,13 @@ import { initClasses } from './store/state.js';
     currentTask.subtasks[subtaskIndex].isDone = !currentTask.subtasks[
       subtaskIndex
     ].isDone;
-    saveToStorage();
     populateSubtasks(state.activeList.tasks, 'subtasks', ulSubtasks, todoIndex);
   }
 
   // Empties todos array and removes all rendered todo items
   function clearAll(e) {
-    while (todoLists.length > 1) {
-      todoLists.pop(); // Remove all lists, except inbox
-    }
-    while (inbox.tasks.length > 0) {
-      inbox.tasks.pop();
-    }
-    saveToStorage();
+    state.todoLists.length = 1; // Removes all lists, except inbox
+    inbox.tasks.length = 0; // Removes all tasks from inbox
     window.location.reload(true);
   }
 
@@ -417,7 +355,6 @@ import { initClasses } from './store/state.js';
       $all('.edit-todo-form__textarea--subtask', ulSubtasks).forEach(
         (subtask) => autoHeightResize(subtask)
       );
-      saveToStorage();
       $('#newSubtaskInput').value = '';
     }
   }
@@ -437,7 +374,6 @@ import { initClasses } from './store/state.js';
     const text = e.target.value;
     if (!/^\s+$/.test(text)) {
       currentTask.note = text;
-      saveToStorage();
     }
   }
 
@@ -449,7 +385,6 @@ import { initClasses } from './store/state.js';
     const todoItem = $(`#${id}`);
     if (newText !== '') {
       currentTask.text = newText;
-      saveToStorage();
 
       if (e.currentTarget === $('#taskName')) {
         $('.todo-item__title', todoItem).value = newText;
@@ -469,7 +404,6 @@ import { initClasses } from './store/state.js';
     const newSubtaskText = e.target.value;
     const subtaskIndex = e.target.dataset.subIndex;
     currentTask.subtasks[subtaskIndex].text = newSubtaskText.trim();
-    saveToStorage();
   }
 
   function toggleContent(e) {
@@ -534,7 +468,6 @@ import { initClasses } from './store/state.js';
     const taskIndex = listObj.findTaskIndex(taskId);
     const ulActiveList = $('.is-active-list');
     listObj.tasks.splice(taskIndex, 1);
-    saveToStorage();
 
     const currentTasksList =
       state.filteredList === null ? state.activeList.tasks : state.filteredList;
@@ -573,9 +506,9 @@ import { initClasses } from './store/state.js';
         (tag) => tag.text === text
       );
     } else {
-      for (let i = 0; i < todoLists.length; i++) {
-        for (let j = 0; j < todoLists[i].tasks.length; j++) {
-          existingTag = todoLists[i].tasks[j].tags.find(
+      for (let i = 0; i < state.todoLists.length; i++) {
+        for (let j = 0; j < state.todoLists[i].tasks.length; j++) {
+          existingTag = state.todoLists[i].tasks[j].tags.find(
             (tag) => tag.text === text
           );
           if (existingTag !== undefined) {
@@ -597,7 +530,7 @@ import { initClasses } from './store/state.js';
     $all('#tagsContainer .tag', formEditTodo)[tagIndex].remove();
     $all('.todo-item__tag-labels .tag-label', todoItem)[tagIndex].remove();
     currentTask.tags.splice(tagIndex, 1);
-    saveToStorage();
+    // saveToStorage();
     const tagsTooltipBtn = $('.tag-labels__btn--tooltip', todoItem);
     if (currentTask.tags.length > 0) {
       // Update tags tooltip
@@ -646,7 +579,6 @@ import { initClasses } from './store/state.js';
           color: existingTag !== undefined ? existingTag.color : 'bg--default'
         };
         state.activeList.tasks[todoIndex].tags.push(tag);
-        saveToStorage();
         const deleteTagBtn = createNode('button', {
           class: 'close-icon',
           type: 'button',
@@ -989,7 +921,7 @@ import { initClasses } from './store/state.js';
     e.preventDefault();
     const query = inputSearch.value.toLowerCase();
     if (query !== '') {
-      const filteredArray = todoLists.reduce((acc, list) => {
+      const filteredArray = state.todoLists.reduce((acc, list) => {
         const filteredTasks = list.tasks.filter((todo) =>
           Object.keys(todo).some((key) => {
             if (typeof todo[key] === 'string') {
@@ -1030,7 +962,7 @@ import { initClasses } from './store/state.js';
   }
 
   function filterTasksByDueDate(dateObj) {
-    return todoLists.reduce(
+    return state.todoLists.reduce(
       (acc, list) =>
         acc.concat(
           list.tasks.filter(
@@ -1180,8 +1112,6 @@ import { initClasses } from './store/state.js';
         }
       }, 300);
     }
-
-    saveToStorage();
   }
 
   function setTagColor(e) {
@@ -1197,9 +1127,12 @@ import { initClasses } from './store/state.js';
     todoItem.tags[tagIndex].color = currentColor.value;
     const tagLabel = $all('.tag-label', $(`#${id}`))[tagIndex];
     tagLabel.className = `tag tag-label ${currentColor.value}`;
-    saveToStorage();
   }
 
+   /**
+   * Renders HTML list element from given list object
+   * @param {Obj} listObj
+   */
   function createList(listObj) {
     const list_ul = createNode('ul', {
       class: 'todo-list custom-list',
@@ -1264,7 +1197,7 @@ import { initClasses } from './store/state.js';
 
   function renderNavItems() {
     // Array of folder names
-    const foldersArr = todoLists
+    const foldersArr = state.todoLists
       .map((list) => list.folder)
       .filter(
         (folder, i, arr) => folder !== null && arr.indexOf(folder) === i
@@ -1296,12 +1229,12 @@ import { initClasses } from './store/state.js';
       frag.appendChild(liFolder);
 
       // Creates accordion panel for each folder, with links to children underneath
-      const folderItems = todoLists.filter((list) => list.folder === folder);
+      const folderItems = state.todoLists.filter((list) => list.folder === folder);
       folderItems.forEach((item) => createNavItem(item, frag));
     });
 
     // Creates regular nav items for miscellaneous lists
-    const miscLists = todoLists.filter((list) => list.folder === null);
+    const miscLists = state.todoLists.filter((list) => list.folder === null);
     miscLists.forEach((item) => {
       if (item.id !== 'inbox') {
         createNavItem(item, frag);
@@ -1316,8 +1249,6 @@ import { initClasses } from './store/state.js';
     const navLinksAll = $all('.sidebar__link');
     navLinksAll.forEach((link) => link.addEventListener('click', openList));
   }
-
-  renderNavItems();
 
   function updateTaskCount(listId) {
     const navLink = $(`.sidebar__link[href="#${listId}"]`);
@@ -1341,7 +1272,7 @@ import { initClasses } from './store/state.js';
         return;
         break;
       default:
-        const listObj = todoLists.find((list) => list.id === listId);
+        const listObj = state.todoLists.find((list) => list.id === listId);
         $('.sidebar__task-count', navLink).textContent =
           listObj.activeTaskCount > 0 ? '' + listObj.activeTaskCount : '';
         if (listObj.activeTaskCount > 0) {
@@ -1365,7 +1296,7 @@ import { initClasses } from './store/state.js';
     });
     if (e.target.id !== 'todayNavLink' && e.target.id !== 'upcomingNavLink') {
       const id = e.target.getAttribute('href').slice(1);
-      const listObj = todoLists.find((list) => list.id === id);
+      const listObj = state.todoLists.find((list) => list.id === id);
       displayList(listObj);
       if (document.documentElement.clientWidth < 768) {
         $('#siteWrapper').classList.remove('show-nav');
@@ -1429,7 +1360,7 @@ import { initClasses } from './store/state.js';
             : null;
 
       const newList = new List(newListName, selectedFolder);
-      todoLists.push(newList);
+      state.todoLists.push(newList);
       createList(newList);
       // Creates new folder accordion element
       if (newFolder) {
@@ -1460,7 +1391,6 @@ import { initClasses } from './store/state.js';
         feather.replace();
       }
       createNavItem(newList);
-      saveToStorage();
       const navLinksAll = $all('.sidebar__link');
       navLinksAll.forEach((link) => {
         if (link.getAttribute('href') === `#${newList.id}`) {
@@ -1548,8 +1478,6 @@ import { initClasses } from './store/state.js';
         $(`[data-folder="${selectedFolder}"]`).appendChild(listNavItem);
       }
     }
-    // Save changes to storage
-    saveToStorage();
     e.currentTarget.reset();
     $('#editListFormContainer').classList.remove('is-active');
   }
@@ -1560,9 +1488,8 @@ import { initClasses } from './store/state.js';
     const listElement = listObj.elem;
 
     // Delete list object
-    const listIndex = todoLists.indexOf(listObj);
-    todoLists.splice(listIndex, 1);
-    saveToStorage();
+    const listIndex = state.todoLists.indexOf(listObj);
+    state.todoLists.splice(listIndex, 1);
 
     // Delete list nav item
     listNavItem.remove();
@@ -1571,7 +1498,7 @@ import { initClasses } from './store/state.js';
     const folder = listObj.folder;
     if (
       folder !== null &&
-      todoLists.filter((list) => list.folder === folder).length === 0
+      state.todoLists.filter((list) => list.folder === folder).length === 0
     ) {
       // Delete nav folder item
       $(`[data-folder="${listObj.folder}"]`).parentNode.remove();
@@ -1590,7 +1517,7 @@ import { initClasses } from './store/state.js';
     $(`.form__label--list[for=${listRadio.id}]`).remove();
 
     // Reload inbox
-    const inbox = todoLists.find((list) => list.name === 'Inbox');
+    const inbox = state.todoLists.find((list) => list.name === 'Inbox');
     displayList(inbox);
 
     if ($('#alertWarningDeleteList').classList.contains('is-active')) {
@@ -1634,11 +1561,6 @@ import { initClasses } from './store/state.js';
     formAddTodo.classList.remove('is-hidden');
   }
 
-  populateCalendarYears();
-
-  // Sets default month to current month
-
-  
   function setDueDate(e) {
     const id = hiddenTaskId.value;
     const currentTask = state.activeList.getTask(id);
@@ -1653,7 +1575,6 @@ import { initClasses } from './store/state.js';
 
     if (currentDueDate.valueOf() !== newDueDate.valueOf()) {
       currentTask.dueDate = newDueDate;
-      saveToStorage();
       const dueDateLabel = $('.badge--due-date', todoItem)
         ? $('.badge--due-date', todoItem)
         : createNode('span');
@@ -1768,7 +1689,7 @@ import { initClasses } from './store/state.js';
       state.filteredList === null ? state.activeList.tasks : state.filteredList;
     const checkedItems = $all('.bulk-actions__checkbox:checked', ulActiveList);
     const newListId = $('input[name="list"]:checked').value;
-    const newListObj = todoLists.find((list) => list.id === newListId);
+    const newListObj = state.todoLists.find((list) => list.id === newListId);
 
     // Remove tasks from current list and add to new list
     checkedItems.forEach((item) => {
@@ -1778,8 +1699,6 @@ import { initClasses } from './store/state.js';
       const task = listObj.tasks.splice(taskIndex, 1)[0];
       newListObj.tasks.unshift(task);
     });
-
-    saveToStorage();
 
     // Update task count
     updateTaskCount(newListObj.id);
@@ -1965,7 +1884,6 @@ import { initClasses } from './store/state.js';
   }
 
   function trackTourProgress(e) {
-    console.log(state.onboarding.nextStep);
     const target = e.currentTarget;
     const tooltip = $('.onboarding__tooltip.show-tooltip');
     const currentStep = state.onboarding.currentStep;
@@ -2125,6 +2043,38 @@ import { initClasses } from './store/state.js';
   }
 
   // Event Listeners
+
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!state.todoLists.find((list) => list.name === 'Inbox')) {
+      $('#onboarding').classList.add('is-active');
+      const initInbox = new List('Inbox', null);
+      state.todoLists.push(initInbox);
+    }
+  
+    const inbox = state.todoLists.find((list) => list.name === 'Inbox');
+    inbox.id = 'inbox';
+    // Populates inbox tasks on load
+    displayList(inbox);
+  
+    // Add toggleDone functionality to all prebuilt lists
+    $all('.todo-list').forEach((list) => {
+      list.addEventListener('click', toggleDone);
+      list.addEventListener('click', toggleContent);
+      list.addEventListener('click', setPriority);
+      updateTaskCount(list.id);
+    });
+  
+      // Creates list node for each list object, except for the inbox list
+      state.todoLists.forEach((list, i) => {
+        if (i !== 0) {
+          createList(list);
+        }
+      });
+      renderNavItems();
+      populateCalendarYears();
+  });
+
+  window.addEventListener('unload', () => saveToStorage()); // Saves current state of state.todoLists to localStorage
 
   $('#newListNameInput').addEventListener('input', (e) => {
     if ($('#errorNoListName').classList.contains('show-msg')) {
@@ -2566,7 +2516,7 @@ import { initClasses } from './store/state.js';
     const currentTask = state.activeList.getTask(id);
     const todoItem = $(`#${id}`);
     currentTask.dueDate = null;
-    saveToStorage();
+    // saveToStorage();
     const dueDateWrapper = $('#dueDateWrapper');
     dueDateWrapper.classList.remove('has-due-date');
     $('.due-date-text', dueDateWrapper).textContent = 'Set due date';

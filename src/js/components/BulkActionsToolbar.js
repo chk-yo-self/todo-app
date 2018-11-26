@@ -1,6 +1,4 @@
 import { $, $all, createNode } from '../lib/helpers.js';
-import store from '../store/index.js';
-import Component from '../lib/Component.js';
 
 export function stickToolbar(e) {
   const toolbar = $('#bulkActionsToolbar');
@@ -84,17 +82,5 @@ export function enableBulkActions(e) {
     ) {
       masterCheckbox.checked = true;
     }
-  }
-}
-
-export default class BulkActionsToolbar extends Component {
-  constructor() {
-    super({
-      store
-    });
-  }
-
-  render() {
-    
   }
 }
